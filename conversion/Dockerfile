@@ -1,8 +1,7 @@
-FROM python:3.7
+FROM jjanzic/docker-python3-opencv
 
 RUN pip install boto3
 RUN pip install pydicom
-RUN pip install opencv-python
 
 WORKDIR /usr/local
 
