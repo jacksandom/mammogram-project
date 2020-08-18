@@ -1,7 +1,6 @@
-FROM python:3.7
+FROM jjanzic/docker-python3-opencv
 
 RUN pip install boto3
-RUN pip install opencv-python
 RUN pip install numpy
 RUN pip install pandas
 
