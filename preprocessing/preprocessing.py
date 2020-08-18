@@ -6,6 +6,7 @@ from matplotlib import path
 import numpy as np
 import pandas as pd
 from urllib.request import urlretrieve
+import sys
 
 
 def download_s3_folder(bucketName, directoryName):
@@ -103,7 +104,7 @@ def upload_s3_folder(bucketName):
 
 if __name__ == '__main__':
 
-    bucket_name = 'mammogram-images'
+    bucket_name = sys.argv[1]
     png_directory_name = 'PNG-Images'
 
     download_s3_folder(bucket_name, png_directory_name)

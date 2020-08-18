@@ -3,6 +3,7 @@ import os
 import pydicom as dicom
 import multiprocessing as mp
 import cv2
+import sys
 
 
 def download_s3_folder(bucketName, directoryName):
@@ -39,7 +40,7 @@ def upload_s3_folder(bucketName):
 
 if __name__ == '__main__':
 
-    bucket_name = 'mammogram-images'
+    bucket_name = sys.argv[1]
     directory_name = 'CBIS-DDSM-Mini'
 
     download_s3_folder(bucket_name, directory_name)
