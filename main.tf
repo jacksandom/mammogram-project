@@ -55,9 +55,6 @@ module "ecs-cluster"{
 
     name_prefix    = "mammogram"
     resource_tags  = {}
-
-    ec2_instance_count = 2
-    ec2_instance_type  = "m4.xlarge"
 }
 
 # ECS Task
@@ -79,10 +76,10 @@ module "ecs-task-conversion"{
     container_num_cores  = 4
     container_ram_gb     = 8
     ecs_cluster_name     = "mammogram-cluster"
-    ecs_launch_type      = "Standard"
+    ecs_launch_type      = "FARGATE"
     permitted_s3_buckets = [var.bucket_name]
     task_definition_name = "mammogram-conversion"
-    use_fargate          = false
+    use_fargate          = true
 }
 
 # ECS Task
@@ -104,10 +101,10 @@ module "ecs-task-preprocessing"{
     container_num_cores  = 4
     container_ram_gb     = 8
     ecs_cluster_name     = "mammogram-cluster"
-    ecs_launch_type      = "Standard"
+    ecs_launch_type      = "FARGATE"
     permitted_s3_buckets = [var.bucket_name]
     task_definition_name = "mammogram-preprocessing"
-    use_fargate          = false
+    use_fargate          = true
 }
 
 # Lambda function
@@ -139,7 +136,13 @@ resource "aws_sfn_state_machine" "state_machine" {
       "Type": "Task",
       "Resource": "arn:aws:states:::ecs:runTask.sync",
       "Parameters": {
-        "LaunchType": "EC2",
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ${jsonencode(module.vpc.public_subnets)},
+            "AssignPublicIp": "ENABLED"
+          }
+        },
         "Overrides": {
           "ContainerOverrides": [
             {  
@@ -157,7 +160,13 @@ resource "aws_sfn_state_machine" "state_machine" {
       "Type": "Task",
       "Resource": "arn:aws:states:::ecs:runTask.sync",
       "Parameters": {
-        "LaunchType": "EC2",
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ${jsonencode(module.vpc.public_subnets)},
+            "AssignPublicIp": "ENABLED"
+          }
+        },
         "Overrides": {
           "ContainerOverrides": [
             {
