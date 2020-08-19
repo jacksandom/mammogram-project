@@ -2,7 +2,7 @@ import boto3
 import os
 import multiprocessing as mp
 import cv2
-import matplotlib as plt
+from matplotlib import path
 import numpy as np
 import pandas as pd
 from urllib.request import urlretrieve
@@ -53,7 +53,7 @@ def remove_marks(img):
 
     mask = np.zeros((img.shape[0], img.shape[1]), dtype=bool)
     for vertices in coords:
-        p = plt.path.Path(vertices)
+        p = path.Path(vertices)
         mask = np.logical_or(mask, p.contains_points(index_img).reshape(img.shape[0], img.shape[1], order='F').astype(np.uint8))
 
     # overwrite boxes
@@ -78,9 +78,9 @@ def train_test_dir(imgPath, labelsFile):
 
 def process_png(file_path):
 
-    (bucket, path, new_path) = file_path
+    (bucket, old_path, new_path) = file_path
     
-    img = cv2.imread(path, 0)
+    img = cv2.imread(old_path, 0)
     unmarked_img = remove_marks(img)
     resized_img = resize_image(unmarked_img)
 
@@ -105,7 +105,7 @@ def preprocess(filePath):
 if __name__ == '__main__':
 
     #bucket_name = sys.argv[1]
-    bucket_name = 'mammogram-images'
+    bucket_name = "mammogram-images"
     png_directory_name = 'PNG-Images'
 
     # download training and testing description CSVs
@@ -126,11 +126,11 @@ if __name__ == '__main__':
         file_paths.append((bucket_name, obj.key))
 
     new_file_paths = []
-    for bucket, path in file_paths:
-        if path.endswith(".png"):
+    for bucket, old_path in file_paths:
+        if old_path.endswith(".png"):
             # append new file path for model training
-            new_path = train_test_dir(path, labels)
-            new_file_paths.append((bucket, path, new_path.replace('\\', '/')))
+            new_path = train_test_dir(old_path, labels)
+            new_file_paths.append((bucket, old_path, new_path.replace('\\', '/')))
 
     pool = mp.Pool()
     pool.map(preprocess, new_file_paths)
