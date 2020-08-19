@@ -104,8 +104,7 @@ def preprocess(filePath):
 
 if __name__ == '__main__':
 
-    #bucket_name = sys.argv[1]
-    bucket_name = "mammogram-images"
+    bucket_name = sys.argv[1]
     png_directory_name = 'PNG-Images'
 
     # download training and testing description CSVs
