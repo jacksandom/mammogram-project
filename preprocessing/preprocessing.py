@@ -118,7 +118,7 @@ if __name__ == '__main__':
     labels = pd.concat([train_description, test_description])[['patient_id', 'pathology']]
     labels = labels.replace('BENIGN_WITHOUT_CALLBACK', 'BENIGN')
     labels = labels.drop_duplicates()
-    labels = labels.groupby('patient_id').first()
+    labels = labels.groupby('patient_id').first().reset_index()
 
     file_paths = []
     s3_resource = boto3.resource('s3')
