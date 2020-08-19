@@ -2,7 +2,7 @@ import boto3
 import os
 import multiprocessing as mp
 import cv2
-from matplotlib import path
+import matplotlib as plt
 import numpy as np
 import pandas as pd
 from urllib.request import urlretrieve
@@ -53,7 +53,7 @@ def remove_marks(img):
 
     mask = np.zeros((img.shape[0], img.shape[1]), dtype=bool)
     for vertices in coords:
-        p = path.Path(vertices)
+        p = plt.path.Path(vertices)
         mask = np.logical_or(mask, p.contains_points(index_img).reshape(img.shape[0], img.shape[1], order='F').astype(np.uint8))
 
     # overwrite boxes
@@ -104,7 +104,8 @@ def preprocess(filePath):
 
 if __name__ == '__main__':
 
-    bucket_name = sys.argv[1]
+    #bucket_name = sys.argv[1]
+    bucket_name = 'mammogram-images'
     png_directory_name = 'PNG-Images'
 
     # download training and testing description CSVs
