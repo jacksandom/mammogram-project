@@ -74,7 +74,7 @@ module "ecs-task-conversion"{
     container_image      = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/mammogram-conversion:latest"
     container_name       = "mammogram-conversion"
     container_num_cores  = 4
-    container_ram_gb     = 8
+    container_ram_gb     = 30
     ecs_cluster_name     = "mammogram-cluster"
     ecs_launch_type      = "FARGATE"
     permitted_s3_buckets = [var.bucket_name]
@@ -99,7 +99,7 @@ module "ecs-task-preprocessing"{
     container_image      = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/mammogram-preprocessing:latest"
     container_name       = "mammogram-preprocessing"
     container_num_cores  = 4
-    container_ram_gb     = 8
+    container_ram_gb     = 30
     ecs_cluster_name     = "mammogram-cluster"
     ecs_launch_type      = "FARGATE"
     permitted_s3_buckets = [var.bucket_name]
@@ -229,8 +229,8 @@ resource "aws_sfn_state_machine" "state_machine" {
         ],
         "HyperParameters": {
           "epochs": "6",
-          "batch-size": "32",
-          "test-batch-size": "32",
+          "batch-size": "16",
+          "test-batch-size": "16",
           "lr": "0.01",
           "backend": "gloo",
           "sagemaker_program": "train.py",
