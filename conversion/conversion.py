@@ -41,7 +41,7 @@ def upload_s3_folder(bucketName):
 if __name__ == '__main__':
 
     bucket_name = sys.argv[1]
-    directory_name = 'CBIS-DDSM-Mini'
+    directory_name = sys.argv[2]
 
     download_s3_folder(bucket_name, directory_name)
 
