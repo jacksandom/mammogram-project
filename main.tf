@@ -28,26 +28,26 @@ resource "aws_s3_bucket_object" "training_script" {
   )
 }
 
-# # ECR Image
-# module "ecr-image-conversion"{
-#     source = "./modules/ecr-image"
+# ECR Image
+module "ecr-image-conversion"{
+    source = "./modules/ecr-image"
 
-#     name_prefix          = "mammogram"
-#     resource_tags        = {}
-#     repository_name      = "conversion"
-#     source_image_path    = "conversion"
-#     aws_credentials_file = var.credentials_path
-# }
+    name_prefix          = "mammogram"
+    resource_tags        = {}
+    repository_name      = "conversion"
+    source_image_path    = "conversion"
+    aws_credentials_file = var.credentials_path
+}
 
-# module "ecr-image-preprocessing"{
-#     source = "./modules/ecr-image"
+module "ecr-image-preprocessing"{
+    source = "./modules/ecr-image"
 
-#     name_prefix          = "mammogram"
-#     resource_tags        = {}
-#     repository_name      = "preprocessing"
-#     source_image_path    = "conversion"
-#     aws_credentials_file = var.credentials_path
-# }
+    name_prefix          = "mammogram"
+    resource_tags        = {}
+    repository_name      = "preprocessing"
+    source_image_path    = "conversion"
+    aws_credentials_file = var.credentials_path
+}
 
 # ECS Cluster
 module "ecs-cluster"{
@@ -144,7 +144,7 @@ resource "aws_sfn_state_machine" "state_machine" {
           "ContainerOverrides": [
             {  
               "Name": "mammogram-conversion",
-              "Command": ["${var.bucket_name}", "CBIS-DDSM-Mini"]
+              "Command": ["${var.bucket_name}", "CBIS-DDSM"]
             }
           ]
         },
