@@ -111,8 +111,10 @@ if __name__ == '__main__':
     urlretrieve("https://wiki.cancerimagingarchive.net/download/attachments/22516629/calc_case_description_train_set.csv?version=1&modificationDate=1506796349666&api=v2", "train-description.csv")
     urlretrieve("https://wiki.cancerimagingarchive.net/download/attachments/22516629/calc_case_description_test_set.csv?version=1&modificationDate=1506796343686&api=v2", "test-description.csv")
 
-    train_description = pd.read_csv('train-description.csv')
-    test_description = pd.read_csv('test-description.csv')
+    train_description = pd.read_csv('train-description.csv', usecols=['patient_id', 'pathology', 'left or right breast', 'image view'])
+    train_description = train_description[(train_description['left or right breast'] == "RIGHT") & (train_description['image view'] == "CC")]
+    test_description = pd.read_csv('test-description.csv', usecols=['patient_id', 'pathology', 'left or right breast', 'image view'])
+    test_description = test_description[(test_description['left or right breast'] == "RIGHT") & (test_description['image view'] == "CC")]
     labels = pd.concat([train_description, test_description])[['patient_id', 'pathology']]
     labels = labels.replace('BENIGN_WITHOUT_CALLBACK', 'BENIGN')
     labels = labels.drop_duplicates()
