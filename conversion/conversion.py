@@ -6,36 +6,38 @@ import cv2
 import sys
 
 
-def download_s3_folder(bucketName, directoryName):
+def download_s3_file(bucketName, filePath):
     s3_resource = boto3.resource('s3')
     bucket = s3_resource.Bucket(bucketName)
-    objects = bucket.objects.filter(Prefix=directoryName)
-    for obj in objects:
-        if not os.path.exists(os.path.dirname(obj.key)):
-            os.makedirs(os.path.dirname(obj.key))
-        if os.path.split(obj.key)[1] != '':
-            bucket.download_file(obj.key, obj.key)
+    if not os.path.exists(os.path.dirname(filePath)):
+        os.makedirs(os.path.dirname(filePath))
+        bucket.download_file(filePath, filePath)
 
 
-def convert_to_png(file_path):
-    (root, file) = file_path
-    ds = dicom.dcmread(os.path.join(root, file))
+def convert_to_png(filePath):
+    ds = dicom.dcmread(filePath)
     pixel_array = ds.pixel_array.astype('float64')
     pixel_array *= 255./pixel_array.max() #normalize image pixels
     pixel_array = pixel_array.astype('uint8')
-    new_file = file.replace('.dcm', '.png')
-    new_dir = os.path.join('PNG-Images', '/'.join(root.split('/')[1:]))
-    if not os.path.exists(new_dir):
-        os.makedirs(new_dir)
-    cv2.imwrite(os.path.join(new_dir, new_file), pixel_array)
+    new_file_path = filePath.replace('.dcm', '.png')
+    new_file_path = os.path.join('PNG-Images', '/'.join(new_file_path.split('/')[1:]))
+    if not os.path.exists('/'.join(new_file_path.split('/')[:-1])):
+        os.makedirs('/'.join(new_file_path.split('/')[:-1]))
+    cv2.imwrite(new_file_path, pixel_array)
+    return new_file_path.replace("\\", "/")
 
 
-def upload_s3_folder(bucketName):
+def upload_s3_file(bucketName, filePath):
     s3 = boto3.client('s3')
-    for root,dirs,files in os.walk('PNG-Images'):
-        for file in files:
-            #print(os.path.join(root,file).replace('\\', '/'))
-            s3.upload_file(os.path.join(root,file), bucketName, os.path.join(root,file).replace('\\', '/'))
+    s3.upload_file(filePath, bucketName, filePath)
+
+
+def conversion(filePath):
+    download_s3_file(filePath[0], filePath[1])
+    newFilePath = convert_to_png(filePath[1])
+    upload_s3_file(filePath[0], newFilePath)
+    os.remove(filePath[1])
+    os.remove(newFilePath)
 
 
 if __name__ == '__main__':
@@ -43,16 +45,13 @@ if __name__ == '__main__':
     bucket_name = sys.argv[1]
     directory_name = sys.argv[2]
 
-    download_s3_folder(bucket_name, directory_name)
-
     file_paths = []
-    for root, dirs, files in os.walk(directory_name):
-            for file in files:
-                if file.endswith(".dcm"):
-                    file_paths.append((root.replace('\\', '/'), file))
+    s3_resource = boto3.resource('s3')
+    bucket = s3_resource.Bucket(bucket_name)
+    objects = bucket.objects.filter(Prefix=directory_name)
+    for obj in objects:
+        file_paths.append((bucket_name, obj.key))
 
     pool = mp.Pool()
-    pool.map(convert_to_png, file_paths)
+    pool.map(conversion, file_paths)
     pool.close()
-    
-    upload_s3_folder(bucket_name)

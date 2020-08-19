@@ -9,15 +9,12 @@ from urllib.request import urlretrieve
 import sys
 
 
-def download_s3_folder(bucketName, directoryName):
+def download_s3_file(bucketName, filePath):
     s3_resource = boto3.resource('s3')
     bucket = s3_resource.Bucket(bucketName)
-    objects = bucket.objects.filter(Prefix=directoryName)
-    for obj in objects:
-        if not os.path.exists(os.path.dirname(obj.key)):
-            os.makedirs(os.path.dirname(obj.key))
-        if os.path.split(obj.key)[1] != '':
-            bucket.download_file(obj.key, obj.key)
+    if not os.path.exists(os.path.dirname(filePath)):
+        os.makedirs(os.path.dirname(filePath))
+        bucket.download_file(filePath, filePath)
 
 
 def remove_marks(img):
@@ -70,44 +67,45 @@ def resize_image(img):
 
 
 def train_test_dir(imgPath, labelsFile):
-    (root,file) = imgPath
-    
     # retrive patient id to find label
-    p_id = '_'.join([root.split('/')[1].split('_')[1], root.split('/')[1].split('_')[2]])
+    p_id = '_'.join([imgPath.split('/')[1].split('_')[1], imgPath.split('/')[1].split('_')[2]])
     label = labelsFile[labelsFile['patient_id'] == p_id]['pathology'].to_string(index=False)
     
-    train_or_test = 'Train' if 'Training' in root else 'Test'
-    new_root = os.path.join('PNG-Images-Processed',train_or_test, label.strip())
-    new_file = p_id + '.png'
-    return(new_root, new_file)
+    train_or_test = 'Train' if 'Training' in imgPath else 'Test'
+    new_path = os.path.join('PNG-Images-Processed',train_or_test, label.strip(), p_id + '.png')
+    return new_path
 
 
 def process_png(file_path):
 
-    (curr_root, curr_file, new_root, new_file) = file_path
+    (bucket, path, new_path) = file_path
     
-    img = cv2.imread(os.path.join(curr_root, curr_file), 0)
+    img = cv2.imread(path, 0)
     unmarked_img = remove_marks(img)
     resized_img = resize_image(unmarked_img)
 
-    if not os.path.exists(new_root):
-        os.makedirs(new_root)
-    cv2.imwrite(os.path.join(new_root, new_file).replace('\\', '/'), resized_img)
+    if not os.path.exists('/'.join(new_path.split('/')[:-1])):
+        os.makedirs('/'.join(new_path.split('/')[:-1]))
+    cv2.imwrite(new_path.replace('\\', '/'), resized_img)
 
 
-def upload_s3_folder(bucketName):
+def upload_s3_file(bucketName, filePath):
     s3 = boto3.client('s3')
-    for root,dirs,files in os.walk('PNG-Images-Processed'):
-        for file in files:
-            s3.upload_file(os.path.join(root,file), bucketName, os.path.join(root,file).replace('\\', '/'))
+    s3.upload_file(filePath, bucketName, filePath)
+
+
+def preprocess(filePath):
+    download_s3_file(filePath[0], filePath[1])
+    process_png(filePath)
+    upload_s3_file(filePath[0], filePath[2])
+    os.remove(filePath[1])
+    os.remove(filePath[2])
 
 
 if __name__ == '__main__':
 
     bucket_name = sys.argv[1]
     png_directory_name = 'PNG-Images'
-
-    download_s3_folder(bucket_name, png_directory_name)
 
     # download training and testing description CSVs
     urlretrieve("https://wiki.cancerimagingarchive.net/download/attachments/22516629/calc_case_description_train_set.csv?version=1&modificationDate=1506796349666&api=v2", "train-description.csv")
@@ -120,15 +118,19 @@ if __name__ == '__main__':
     labels = labels.drop_duplicates()
 
     file_paths = []
-    for root, dirs, files in os.walk(png_directory_name):
-            for file in files:
-                if file.endswith(".png"):
-                    # append new file path for model training
-                    (new_root, new_file) = train_test_dir((root.replace('\\', '/'), file), labels)
-                    file_paths.append((root.replace('\\', '/'), file, new_root.replace('\\', '/'), new_file))
+    s3_resource = boto3.resource('s3')
+    bucket = s3_resource.Bucket(bucket_name)
+    objects = bucket.objects.filter(Prefix=png_directory_name)
+    for obj in objects:
+        file_paths.append((bucket_name, obj.key))
+
+    new_file_paths = []
+    for bucket, path in file_paths:
+        if path.endswith(".png"):
+            # append new file path for model training
+            new_path = train_test_dir(path, labels)
+            new_file_paths.append((bucket, path, new_path.replace('\\', '/')))
 
     pool = mp.Pool()
-    pool.map(process_png, file_paths)
+    pool.map(preprocess, new_file_paths)
     pool.close()
-
-    upload_s3_folder(bucket_name)
