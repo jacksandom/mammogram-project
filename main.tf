@@ -127,11 +127,6 @@ resource "aws_sfn_state_machine" "state_machine" {
 {
   "StartAt": "Conversion",
   "States": {
-    "Generate Unique Job Name": {
-      "Resource": "arn:aws:lambda:${var.region}:068255676137:function:unique_job_name",
-      "Type": "Task",
-      "Next": "Train Model"
-    },
     "Conversion": {
       "Type": "Task",
       "Resource": "arn:aws:states:::ecs:runTask.sync",
@@ -179,6 +174,11 @@ resource "aws_sfn_state_machine" "state_machine" {
         "TaskDefinition": "arn:aws:ecs:${var.region}:068255676137:task-definition/mammogram-preprocessing"
       },
       "Next": "Generate Unique Job Name"
+    },
+    "Generate Unique Job Name": {
+      "Resource": "arn:aws:lambda:${var.region}:068255676137:function:unique_job_name",
+      "Type": "Task",
+      "Next": "Train Model"
     },
     "Train Model": {
       "Resource": "arn:aws:states:::sagemaker:createTrainingJob.sync",
